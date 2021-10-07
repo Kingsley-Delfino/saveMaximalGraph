@@ -108,27 +108,6 @@ public class MaximalGraph {
         return graphs;
     }
 
-//    public static void calculateMaximalGraph(Set<Graph> graphs) {
-//        Graph[] graphsArray = new Graph[graphs.size()];
-//        graphs.toArray(graphsArray);
-//        for (int i = 0; i < graphsArray.length - 1; i ++) {
-//            for (int j = i + 1; j < graphsArray.length; j ++) {
-//                if (!(new HashSet<>(graphsArray[i].getNodes()).retainAll(new HashSet<>(graphsArray[j].getNodes()))) && !(new HashSet<>(graphsArray[i].getEdges()).retainAll(new HashSet<>(graphsArray[j].getEdges())))) {
-//                    System.out.println(graphsArray[i].getIndex() + " killed by " + graphsArray[j].getIndex());
-//                    graphs.remove(graphsArray[i]);
-//                    calculateMaximalGraph(graphs);
-//                    return;
-//                }
-//                else if (!(new HashSet<>(graphsArray[j].getNodes()).retainAll(new HashSet<>(graphsArray[i].getNodes()))) && !(new HashSet<>(graphsArray[j].getEdges()).retainAll(new HashSet<>(graphsArray[i].getEdges())))) {
-//                    System.out.println(graphsArray[j].getIndex() + " killed by " + graphsArray[i].getIndex());
-//                    graphs.remove(graphsArray[j]);
-//                    calculateMaximalGraph(graphs);
-//                    return;
-//                }
-//            }
-//        }
-//    }
-
     public static void calculateMaximalGraph(Set<Graph> graphSet) {
         List<Graph> graphList = new ArrayList<>(graphSet);
         // 节点少的子图排在前面，若节点数量相等，则将边少的子图排在前面
