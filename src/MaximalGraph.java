@@ -159,7 +159,10 @@ public class MaximalGraph {
             });
             PrintStream ps = new PrintStream(fileName);
             System.setOut(ps);
+            int rank = 0;
             for (Graph graph: graphList) {
+                System.out.println("Rank: " + rank ++);
+                System.out.println();
                 System.out.println("t # " + graph.getIndex());
                 Map<Integer, Integer> nodeReplace = new HashMap<>();
                 int index = 0;
