@@ -64,12 +64,13 @@ public class MaximalGraph {
                 Set<Integer> nodes = new HashSet<>();
                 Set<Set<Integer>> edges =new HashSet<>();
                 Map<Integer,Integer> nodeReplace = new HashMap<>();
+                int support = 0;
                 while ((lineTxt = bufferedReader.readLine()) != null) {
                     String[] array = lineTxt.split(" ");
                     switch (array[0]) {
                         case "t":
                             if (index >= 0) {
-                                graphs.add(new Graph(index, nodes, edges));
+                                graphs.add(new Graph(index, nodes, edges, support));
                             }
                             index = Integer.parseInt(array[2]);
                             nodes.clear();
@@ -92,9 +93,12 @@ public class MaximalGraph {
                             }
                             edges.add(edge);
                             break;
+                        case "Support:":
+                            support = Integer.parseInt(array[1]);
+                            break;
                     }
                 }
-                graphs.add(new Graph(index, nodes, edges));
+                graphs.add(new Graph(index, nodes, edges, support));
                 read.close();
             }
             else {
@@ -135,11 +139,27 @@ public class MaximalGraph {
         }
     }
 
-    public static void export(Set<Graph> graphs, Map<Integer,String> indexToFileNameMap, String fileName) {
+    public static void export(Set<Graph> graphSet, Map<Integer,String> indexToFileNameMap, String fileName) {
         try {
+            List<Graph> graphList = new ArrayList<>(graphSet);
+            graphList.sort((graph1, graph2) -> {
+                int nodeCount1 = graph1.getNodes().size();
+                int nodeCount2 = graph2.getNodes().size();
+                int edgeCount1 = graph1.getEdges().size();
+                int edgeCount2 = graph2.getEdges().size();
+                int support1 = graph1.getSupport();
+                int support2 = graph2.getSupport();
+                if (nodeCount1 == nodeCount2) {
+                    if (edgeCount1 == edgeCount2) {
+                        return Integer.compare(support2, support1);
+                    }
+                    return Integer.compare(edgeCount2, edgeCount1);
+                }
+                return Integer.compare(nodeCount2, nodeCount1);
+            });
             PrintStream ps = new PrintStream(fileName);
             System.setOut(ps);
-            for (Graph graph: graphs) {
+            for (Graph graph: graphList) {
                 System.out.println("t # " + graph.getIndex());
                 Map<Integer, Integer> nodeReplace = new HashMap<>();
                 int index = 0;
@@ -152,6 +172,11 @@ public class MaximalGraph {
                     List<Integer> edgeList = new ArrayList<>(edgeSet);
                     System.out.println("e " + nodeReplace.get(edgeList.get(0)) + " " + nodeReplace.get(edgeList.get(1)) + " 1");
                 }
+                System.out.println();
+                System.out.println("Support: " + graph.getSupport());
+                System.out.println();
+                System.out.println("-----------------");
+                System.out.println();
             }
         }
         catch (Exception e) {
