@@ -20,7 +20,7 @@ public class Graph {
         this.index = index;
         this.nodes = new HashSet<>(nodes);
         this.edges = new HashSet<>(edges);
-        this.where = where;
+        this.where = where == null ? new int[0] : where;
         this.support = support;
         this.diameter = 0;
     }
