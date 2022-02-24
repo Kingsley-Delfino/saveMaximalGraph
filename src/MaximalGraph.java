@@ -4,26 +4,28 @@ import java.util.*;
 public class MaximalGraph {
     private static final String G_SPAN_PATH = "/Users/kingsley/FDSE/gSpan/graphdata";
 
-    // 需要分析的文件名称，14为窗口长，2为步长
-    private static final String FILE_NAME = "/cassandra_file_28_7";
+    // 需要分析的文件名称，14为窗口长
+    private static final String FILE_NAME = "/commons-io_function_14";
 
-    // gSpan的结果导出文件名称，70为support
-    private static final String G_SPAN_RESULT_NAME = FILE_NAME + "_48";
+    // gSpan的结果导出文件名称，7为support
+    private static final String G_SPAN_RESULT_NAME = FILE_NAME + "_7";
 
     // 对应分析文件的Map文件名称
-    private static final String MAP_NAME = FILE_NAME + "(Map)";
+//    private static final String MAP_NAME = FILE_NAME + "(Map)";
 
     // 本程序输出结果文件名称
     private static final String MAXIMAL_RESULT_NAME = G_SPAN_RESULT_NAME + "(Maximal_more_node)";
 
+    // 文件后缀名
     private static final String FILE_SUFFIX = ".txt";
 
     public static void main(String[] args) {
         Set<Graph> graphSet = readGSpanResult(G_SPAN_PATH + G_SPAN_RESULT_NAME + FILE_SUFFIX);
-        Map<Integer, String> indexToFileNameMap = getIndexToFileNameMap(G_SPAN_PATH + MAP_NAME + FILE_SUFFIX);
+//        Map<Integer, String> indexToFileNameMap = getIndexToFileNameMap(G_SPAN_PATH + MAP_NAME + FILE_SUFFIX);
         calculateMaximalGraph(graphSet);
         calculateGraphDiameter(graphSet);
-        export(graphSet, indexToFileNameMap, G_SPAN_PATH + MAXIMAL_RESULT_NAME + FILE_SUFFIX);
+//        export(graphSet, indexToFileNameMap, G_SPAN_PATH + MAXIMAL_RESULT_NAME + FILE_SUFFIX);
+        export(graphSet, G_SPAN_PATH + MAXIMAL_RESULT_NAME + FILE_SUFFIX);
     }
 
     public static Map<Integer,String> getIndexToFileNameMap(String filePath) {
@@ -144,7 +146,7 @@ public class MaximalGraph {
                 Set<Set<Integer>> edgeSet = new HashSet<>(graphList.get(i).getEdges());
                 edgeSet.removeAll(graphList.get(j).getEdges());
                 if (nodeSet.size() == 0 && edgeSet.size() == 0) {
-                    System.out.println(graphList.get(i).getIndex() + " killed by " + graphList.get(j).getIndex());
+                    System.out.println(graphList.get(i).getIndex() + " was killed by " + graphList.get(j).getIndex());
                     graphSet.remove(graphList.get(i));
                     break;
                 }
@@ -206,25 +208,11 @@ public class MaximalGraph {
         }
     }
 
-    public static void export(Set<Graph> graphSet, Map<Integer,String> indexToFileNameMap, String fileName) {
+//    public static void export(Set<Graph> graphSet, Map<Integer, String> indexToFileNameMap, String fileName) {
+    public static void export(Set<Graph> graphSet, String fileName) {
         try {
             List<Graph> graphList = new ArrayList<>(graphSet);
-            graphList.sort((graph1, graph2) -> {
-                int nodeCount1 = graph1.getNodes().size();
-                int nodeCount2 = graph2.getNodes().size();
-                int edgeCount1 = graph1.getEdges().size();
-                int edgeCount2 = graph2.getEdges().size();
-                int support1 = graph1.getSupport();
-                int support2 = graph2.getSupport();
-                if (nodeCount1 == nodeCount2) {
-                    if (edgeCount1 == edgeCount2) {
-                        return Integer.compare(support2, support1);
-                    }
-                    return Integer.compare(edgeCount2, edgeCount1);
-                }
-                return Integer.compare(nodeCount2, nodeCount1);
-//                return Integer.compare(support2, support1);
-            });
+            sortForGraph(graphList);
             PrintStream ps = new PrintStream(fileName);
             System.setOut(ps);
             int rank = 0;
@@ -235,7 +223,7 @@ public class MaximalGraph {
                 Map<Integer, Integer> nodeReplace = new HashMap<>();
                 int index = 0;
                 for (Integer node : graph.getNodes()) {
-                    System.out.println("v " + index + " " + indexToFileNameMap.get(node)); // 输出文件名
+                    System.out.println("v " + index + " " + node); // 输出文件名
                     nodeReplace.put(node, index);
                     index ++;
                 }
@@ -263,5 +251,40 @@ public class MaximalGraph {
         catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static void sortForGraph(List<Graph> graphList) {
+        graphList.sort((graph1, graph2) -> {
+            int nodeCount1 = graph1.getNodes().size();
+            int nodeCount2 = graph2.getNodes().size();
+            int edgeCount1 = graph1.getEdges().size();
+            int edgeCount2 = graph2.getEdges().size();
+            int support1 = graph1.getSupport();
+            int support2 = graph2.getSupport();
+            return sortForGraphByNode(nodeCount1, nodeCount2, edgeCount1, edgeCount2, support1, support2);
+//            return sortForGraphBySupport(nodeCount1, nodeCount2, edgeCount1, edgeCount2, support1, support2);
+        });
+    }
+
+    // 根据节点数排序，若节点数相等则根据边数排序，若边数相等则根据support排序
+    public static int sortForGraphByNode(int nodeCount1, int nodeCount2, int edgeCount1, int edgeCount2, int support1, int support2) {
+        if (nodeCount1 == nodeCount2) {
+            if (edgeCount1 == edgeCount2) {
+                return Integer.compare(support2, support1);
+            }
+            return Integer.compare(edgeCount2, edgeCount1);
+        }
+        return Integer.compare(nodeCount2, nodeCount1);
+    }
+
+    // 根据support排序，若support相等，则根据节点数排序，若节点数相等则根据边数排序
+    public static int sortForGraphBySupport(int nodeCount1, int nodeCount2, int edgeCount1, int edgeCount2, int support1, int support2) {
+        if (support1 == support2) {
+            if (nodeCount1 == nodeCount2) {
+                return Integer.compare(edgeCount2, edgeCount1);
+            }
+            return Integer.compare(nodeCount2, nodeCount1);
+        }
+        return Integer.compare(support2, support1);
     }
 }
