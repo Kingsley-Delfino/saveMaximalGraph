@@ -1,60 +1,9 @@
 import java.io.*;
 import java.util.*;
 
-public class MaximalGraph {
-    private static final String G_SPAN_PATH = "/Users/kingsley/FDSE/gSpan/graphdata";
+public class GraphUtils {
 
-    // 需要分析的文件名称，14为窗口长
-    private static final String FILE_NAME = "/commons-io_function_14";
-
-    // gSpan的结果导出文件名称，7为support
-    private static final String G_SPAN_RESULT_NAME = FILE_NAME + "_7";
-
-    // 对应分析文件的Map文件名称
-//    private static final String MAP_NAME = FILE_NAME + "(Map)";
-
-    // 本程序输出结果文件名称
-    private static final String MAXIMAL_RESULT_NAME = G_SPAN_RESULT_NAME + "(Maximal_more_node)";
-
-    // 文件后缀名
-    private static final String FILE_SUFFIX = ".txt";
-
-    public static void main(String[] args) {
-        Set<Graph> graphSet = readGSpanResult(G_SPAN_PATH + G_SPAN_RESULT_NAME + FILE_SUFFIX);
-//        Map<Integer, String> indexToFileNameMap = getIndexToFileNameMap(G_SPAN_PATH + MAP_NAME + FILE_SUFFIX);
-        calculateMaximalGraph(graphSet);
-        calculateGraphDiameter(graphSet);
-//        export(graphSet, indexToFileNameMap, G_SPAN_PATH + MAXIMAL_RESULT_NAME + FILE_SUFFIX);
-        export(graphSet, G_SPAN_PATH + MAXIMAL_RESULT_NAME + FILE_SUFFIX);
-    }
-
-    public static Map<Integer,String> getIndexToFileNameMap(String filePath) {
-        Map<Integer, String> indexToFileNameMap = new HashMap<>();
-        try {
-            String encoding="GBK";
-            File file = new File(filePath);
-            if (file.isFile() && file.exists()) {// 判断文件是否存在
-                InputStreamReader read = new InputStreamReader(new FileInputStream(file),encoding);// 考虑到编码格式
-                BufferedReader bufferedReader = new BufferedReader(read);
-                String lineTxt;
-                while ((lineTxt = bufferedReader.readLine()) != null) {
-                    String[] array = lineTxt.split(": ");
-                    indexToFileNameMap.put(Integer.parseInt(array[0]), array[1]);
-                }
-                read.close();
-            }
-            else {
-                System.out.println("找不到指定的文件");
-            }
-        }
-        catch (Exception e) {
-            System.out.println("读取文件内容出错");
-            e.printStackTrace();
-        }
-        return indexToFileNameMap;
-    }
-
-    public static Set<Graph> readGSpanResult(String filePath) {
+    public static Set<Graph> readGraph(String filePath) {
         Set<Graph> graphSet = new HashSet<>();
         try {
             String encoding="GBK";
@@ -110,7 +59,6 @@ public class MaximalGraph {
                             }
                             Arrays.sort(where);
                             break;
-
                     }
                 }
                 graphSet.add(new Graph(index, nodes, edges, where, support));
@@ -155,60 +103,57 @@ public class MaximalGraph {
     }
 
     // 在一个无向图中，将任意两点间最短距离的最大值定义为图的直径
-    public static void calculateGraphDiameter(Set<Graph> graphSet) {
-        for (Graph graph : graphSet) {
-            Set<Integer> nodes  = graph.getNodes();
-            Set<Set<Integer>> edges = graph.getEdges();
-            if (edges.size() == nodes.size() * (nodes.size() - 1) / 2) {
-                graph.setDiameter(1);
+    public static void calculateGraphDiameter(Graph graph) {
+        Set<Integer> nodes  = graph.getNodes();
+        Set<Set<Integer>> edges = graph.getEdges();
+        if (edges.size() == nodes.size() * (nodes.size() - 1) / 2) {
+            graph.setDiameter(1);
+        }
+        else {
+            int diameter = 0;
+            int index = 0;
+            // 全局下标->局部下标
+            Map<Integer, Integer> map = new HashMap<>();
+            int[][] K = new int[nodes.size()][nodes.size()];
+            for (int i = 0; i < nodes.size(); i ++) {
+                for (int j = 0; j < nodes.size(); j ++) {
+                    K[i][j] = nodes.size();
+                }
             }
-            else {
-                int diameter = 0;
-                int index = 0;
-                // 全局下标->局部下标
-                Map<Integer, Integer> map = new HashMap<>();
-                int[][] K = new int[nodes.size()][nodes.size()];
+            for (Set<Integer> edge : edges) {
+                Integer[] a = edge.toArray(new Integer[0]);
+                int startIndex = a[0];
+                int endIndex = a[1];
+                if (!map.containsKey(startIndex)) {
+                    map.put(startIndex, index);
+                    index ++;
+                }
+                if (!map.containsKey(endIndex)) {
+                    map.put(endIndex, index);
+                    index ++;
+                }
+                K[map.get(startIndex)][map.get(endIndex)] = 1;
+                K[map.get(endIndex)][map.get(startIndex)] = 1;
+            }
+            for (int k = 0; k < nodes.size(); k ++) {
                 for (int i = 0; i < nodes.size(); i ++) {
                     for (int j = 0; j < nodes.size(); j ++) {
-                        K[i][j] = nodes.size();
-                    }
-                }
-                for (Set<Integer> edge : edges) {
-                    Integer[] a = edge.toArray(new Integer[0]);
-                    int startIndex = a[0];
-                    int endIndex = a[1];
-                    if (!map.containsKey(startIndex)) {
-                        map.put(startIndex, index);
-                        index ++;
-                    }
-                    if (!map.containsKey(endIndex)) {
-                        map.put(endIndex, index);
-                        index ++;
-                    }
-                    K[map.get(startIndex)][map.get(endIndex)] = 1;
-                    K[map.get(endIndex)][map.get(startIndex)] = 1;
-                }
-                for (int k = 0; k < nodes.size(); k ++) {
-                    for (int i = 0; i < nodes.size(); i ++) {
-                        for (int j = 0; j < nodes.size(); j ++) {
-                            if (K[i][j] > K[i][k] + K[k][j]) {
-                                K[i][j] = K[i][k] + K[k][j];
-                            }
+                        if (K[i][j] > K[i][k] + K[k][j]) {
+                            K[i][j] = K[i][k] + K[k][j];
                         }
                     }
                 }
-                for (int i = 0; i < nodes.size(); i ++) {
-                    for (int j = i + 1; j < nodes.size(); j ++) {
-                        diameter = Math.max(diameter, K[i][j]);
-                    }
-                }
-                graph.setDiameter(diameter);
             }
-            System.out.println("graph diameter of graph_" + graph.getIndex() + " is " + graph.getDiameter());
+            for (int i = 0; i < nodes.size(); i ++) {
+                for (int j = i + 1; j < nodes.size(); j ++) {
+                    diameter = Math.max(diameter, K[i][j]);
+                }
+            }
+            graph.setDiameter(diameter);
         }
+        System.out.println("graph diameter of graph_" + graph.getIndex() + " is " + graph.getDiameter());
     }
 
-//    public static void export(Set<Graph> graphSet, Map<Integer, String> indexToFileNameMap, String fileName) {
     public static void export(Set<Graph> graphSet, String fileName) {
         try {
             List<Graph> graphList = new ArrayList<>(graphSet);
@@ -234,7 +179,7 @@ public class MaximalGraph {
                 System.out.println();
                 System.out.println("Diameter: " + graph.getDiameter());
                 System.out.println("Support: " + graph.getSupport());
-                System.out.print("Where: [");
+                System.out.print("where: [");
                 int[] where = graph.getWhere();
                 for (int i = 0; i < where.length; i ++) {
                     if (i > 0) {
@@ -262,7 +207,6 @@ public class MaximalGraph {
             int support1 = graph1.getSupport();
             int support2 = graph2.getSupport();
             return sortForGraphByNode(nodeCount1, nodeCount2, edgeCount1, edgeCount2, support1, support2);
-//            return sortForGraphBySupport(nodeCount1, nodeCount2, edgeCount1, edgeCount2, support1, support2);
         });
     }
 
