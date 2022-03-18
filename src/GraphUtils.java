@@ -1,15 +1,42 @@
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.io.IOUtils;
+
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class GraphUtils {
 
+    /**
+     *
+     * 从指定的文件中读取图，图的格式一般如下：
+     *
+     * # 1
+     * v 0 132
+     * v 1 2343
+     * v 2 23
+     * e 0 1 1
+     * e 0 2 21
+     *
+     * Support: 5
+     * where: [3, 4, 5, 6, 7]
+     *
+     * -----------------
+     *
+     * @param filePath 读取的文件路径
+     * @return 从文件中读取到的图的集合
+     *
+     */
     public static Set<Graph> readGraph(String filePath) {
         Set<Graph> graphSet = new HashSet<>();
         try {
             String encoding="GBK";
             File file = new File(filePath);
-            if (file.isFile() && file.exists()) { // 判断文件是否存在
-                InputStreamReader read = new InputStreamReader(new FileInputStream(file), encoding);// 考虑到编码格式
+            // 判断文件是否存在
+            if (file.isFile() && file.exists()) {
+                // 考虑到编码格式
+                InputStreamReader read = new InputStreamReader(new FileInputStream(file), encoding);
                 BufferedReader bufferedReader = new BufferedReader(read);
                 String lineTxt;
                 int index = -1;
@@ -18,12 +45,13 @@ public class GraphUtils {
                 Map<Integer, Integer> nodeReplace = new HashMap<>();
                 int[] where = null;
                 int support = 0;
+                // 按行读取数据
                 while ((lineTxt = bufferedReader.readLine()) != null) {
                     String[] array = lineTxt.split(" ");
                     switch (array[0]) {
                         case "t":
                             if (index >= 0) {
-                                graphSet.add(new Graph(index, nodes, edges, where, support));
+                                graphSet.add(new Graph(index, nodes, edges, where, null, support));
                             }
                             index = Integer.parseInt(array[2]);
                             nodes.clear();
@@ -61,7 +89,7 @@ public class GraphUtils {
                             break;
                     }
                 }
-                graphSet.add(new Graph(index, nodes, edges, where, support));
+                graphSet.add(new Graph(index, nodes, edges, where, null, support));
                 read.close();
             }
             else {
@@ -75,6 +103,14 @@ public class GraphUtils {
         return graphSet;
     }
 
+    /**
+     *
+     * 计算最大图，即将其他图的子图消灭掉
+     * 若一个图的节点集和边集都是另一个图的节点集和边集的子集，则第一个图是第二个图的子图
+     *
+     * @param graphSet 从文件中读取到的图的集合
+     *
+     */
     public static void calculateMaximalGraph(Set<Graph> graphSet) {
         List<Graph> graphList = new ArrayList<>(graphSet);
         // 节点少的子图排在前面，若节点数量相等，则将边少的子图排在前面
@@ -93,6 +129,7 @@ public class GraphUtils {
                 nodeSet.removeAll(graphList.get(j).getNodes());
                 Set<Set<Integer>> edgeSet = new HashSet<>(graphList.get(i).getEdges());
                 edgeSet.removeAll(graphList.get(j).getEdges());
+                // 节点集和边集是子集
                 if (nodeSet.size() == 0 && edgeSet.size() == 0) {
                     System.out.println(graphList.get(i).getIndex() + " was killed by " + graphList.get(j).getIndex());
                     graphSet.remove(graphList.get(i));
@@ -102,7 +139,14 @@ public class GraphUtils {
         }
     }
 
-    // 在一个无向图中，将任意两点间最短距离的最大值定义为图的直径
+    /**
+     *
+     * 计算图的直径
+     * 在一个无向图中，将任意两点间最短距离的最大值定义为图的直径
+     *
+     * @param graph 单个图
+     *
+     */
     public static void calculateGraphDiameter(Graph graph) {
         Set<Integer> nodes  = graph.getNodes();
         Set<Set<Integer>> edges = graph.getEdges();
@@ -154,6 +198,26 @@ public class GraphUtils {
         System.out.println("graph diameter of graph_" + graph.getIndex() + " is " + graph.getDiameter());
     }
 
+    /**
+     *
+     * 将图导出到目标文件，导出图的格式一般为：
+     *
+     * # 1
+     * v 0 132
+     * v 1 2343
+     * v 2 23
+     * e 0 1 1
+     * e 0 2 21
+     *
+     * Support: 5
+     * where: [3, 4, 5, 6, 7]
+     *
+     * -----------------
+     *
+     * @param graphSet 需要导出的图的集合
+     * @param fileName 导出文件的目标文件名
+     *
+     */
     public static void export(Set<Graph> graphSet, String fileName) {
         try {
             List<Graph> graphList = new ArrayList<>(graphSet);
@@ -188,6 +252,23 @@ public class GraphUtils {
                     System.out.print(where[i]);
                 }
                 System.out.println("]");
+                Map<Integer, List<Integer>> update = graph.getUpdate();
+                if (!update.isEmpty()) {
+                    System.out.println("Update: [");
+                    for (Map.Entry<Integer, List<Integer>> entry : update.entrySet()) {
+                        System.out.print(entry.getKey());
+                        System.out.print(": [");
+                        List<Integer> updateList = entry.getValue();
+                        for (int i = 0; i < updateList.size(); i ++) {
+                            if (i > 0) {
+                                System.out.print(", ");
+                            }
+                            System.out.print(updateList.get(i));
+                        }
+                        System.out.println("]");
+                    }
+                    System.out.println("]");
+                }
                 System.out.println();
                 System.out.println("-----------------");
                 System.out.println();
@@ -198,6 +279,13 @@ public class GraphUtils {
         }
     }
 
+    /**
+     *
+     * 对图进行排序
+     *
+     * @param graphList 需要排序的图的集合
+     *
+     */
     public static void sortForGraph(List<Graph> graphList) {
         graphList.sort((graph1, graph2) -> {
             int nodeCount1 = graph1.getNodes().size();
@@ -210,7 +298,18 @@ public class GraphUtils {
         });
     }
 
-    // 根据节点数排序，若节点数相等则根据边数排序，若边数相等则根据support排序
+    /**
+     *
+     * 根据节点数排序，若节点数相等则根据边数排序，若边数相等则根据support排序
+     *
+     * @param nodeCount1 图1的节点数
+     * @param nodeCount2 图2的节点数
+     * @param edgeCount1 图1的边数
+     * @param edgeCount2 图2的边数
+     * @param support1 图1的support
+     * @param support2 图2的support
+     *
+     */
     public static int sortForGraphByNode(int nodeCount1, int nodeCount2, int edgeCount1, int edgeCount2, int support1, int support2) {
         if (nodeCount1 == nodeCount2) {
             if (edgeCount1 == edgeCount2) {
@@ -221,7 +320,18 @@ public class GraphUtils {
         return Integer.compare(nodeCount2, nodeCount1);
     }
 
-    // 根据support排序，若support相等，则根据节点数排序，若节点数相等则根据边数排序
+    /**
+     *
+     * 根据support排序，若support相等，则根据节点数排序，若节点数相等则根据边数排序
+     *
+     * @param nodeCount1 图1的节点数
+     * @param nodeCount2 图2的节点数
+     * @param edgeCount1 图1的边数
+     * @param edgeCount2 图2的边数
+     * @param support1 图1的support
+     * @param support2 图2的support
+     *
+     */
     public static int sortForGraphBySupport(int nodeCount1, int nodeCount2, int edgeCount1, int edgeCount2, int support1, int support2) {
         if (support1 == support2) {
             if (nodeCount1 == nodeCount2) {
@@ -230,5 +340,26 @@ public class GraphUtils {
             return Integer.compare(nodeCount2, nodeCount1);
         }
         return Integer.compare(support2, support1);
+    }
+
+    /**
+     *
+     * 根据文件路径，获取json内容
+     *
+     * @param jsonFilePath json文件路径
+     * @return 获取的json
+     *
+     */
+    public static JSONObject readJson(String jsonFilePath) {
+        JSONObject jsonObject = null;
+        try {
+            InputStream inputStream = new BufferedInputStream(new FileInputStream(jsonFilePath));
+            String gitConfigString = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
+            jsonObject = JSON.parseObject(gitConfigString);
+        }
+        catch (Exception e) {
+            System.out.println("读取GitJson文件失败，gitJsonPath：" + jsonFilePath);
+        }
+        return jsonObject;
     }
 }
