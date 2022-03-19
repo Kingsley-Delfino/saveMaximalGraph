@@ -16,12 +16,15 @@ public class Graph {
 
     private int diameter;
 
+    private Map<Integer, List<Integer>> nodeBeforeOrAfter;
+
     public Graph(int index, Set<Integer> nodes, Set<Set<Integer>> edges, int[] where, Map<Integer, List<Integer>> update, int support) {
         this.index = index;
         this.nodes = new HashSet<>(nodes);
         this.edges = new HashSet<>(edges);
         this.where = where == null ? new int[0] : where;
         this.update = update == null ? new HashMap<>() : new HashMap<>(update);
+        this.nodeBeforeOrAfter = new HashMap<>();
         this.support = support;
         this.diameter = 0;
     }
@@ -69,5 +72,13 @@ public class Graph {
 
     public void setUpdate(Map<Integer, List<Integer>> update) {
         this.update = new TreeMap<>(update);
+    }
+
+    public void setNodeBeforeOrAfter(Map<Integer, List<Integer>> nodeBeforeOrAfter) {
+        this.nodeBeforeOrAfter = new HashMap<>(nodeBeforeOrAfter);
+    }
+
+    public Map<Integer, List<Integer>> getNodeBeforeOrAfter() {
+        return nodeBeforeOrAfter;
     }
 }
