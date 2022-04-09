@@ -5,13 +5,19 @@ import java.util.*;
 
 public class AtomicGraphSplicer {
 
-    private static final String G_SPAN_PATH = "/Users/kingsley/FDSE/gSpan/graphdata";
+    private static final String G_SPAN_PATH = "D:\\workspace\\project\\code-change-analysis\\dataset\\commons-io1000";
 
-    // 需要分析的文件名称，14为窗口长
-    private static final String FILE_NAME = "/commons-io(1361)_file_7";
+    // 需要分析的文件名称，7为窗口长
+    private static final String FILE_NAME = "/commons-io1000_file_k3_7";
 
-    // gSpan的结果导出文件名称，7为support
-    private static final String G_SPAN_RESULT_NAME = FILE_NAME + "_3_0316";
+    //support
+    private static final String SUPPORT = "_2";
+
+    //日期
+    private static final String DATE = "_0409";
+
+    // gSpan的结果导出文件名称
+    private static final String G_SPAN_RESULT_NAME = FILE_NAME + SUPPORT + DATE;
 
     // 本程序读取文件名称
     private static final String MAXIMAL_RESULT_NAME = G_SPAN_RESULT_NAME + "(Maximal_Graph)";
@@ -39,7 +45,7 @@ public class AtomicGraphSplicer {
         // 寻找每个拼接之后的图所在的commit
         findWhereList(allSplicedGraph, graphSet);
         // 读取json文件
-        JSONObject jsonObject = GraphUtils.readJson(G_SPAN_PATH + FILE_NAME + "_0316" + JSON_SUFFIX);
+        JSONObject jsonObject = GraphUtils.readJson(G_SPAN_PATH + FILE_NAME + DATE + JSON_SUFFIX);
         // 寻找拼接图所涉及到的每个commit修改的文件
         findUpdate(allSplicedGraph, jsonObject);
         // 导出图
@@ -264,6 +270,9 @@ public class AtomicGraphSplicer {
         // 寻找每个拼接图涉及到的commit在当前图中的修改文件下标
         for (Graph splicedGraph : splicedGraphSet) {
             Map<Integer, List<Integer>> updateMap = new TreeMap<>();
+            Map<Integer, List<String>> centralCommit = new TreeMap<>();
+            Set<String> relativeCommits = new LinkedHashSet<>();
+
             int[] whereArray = splicedGraph.getWhere();
             Set<Integer> nodeSet = splicedGraph.getNodes();
             for (int where : whereArray) {
@@ -271,8 +280,19 @@ public class AtomicGraphSplicer {
                 updateList.retainAll(nodeSet);
                 Collections.sort(updateList);
                 updateMap.put(where, updateList);
+
+                JSONObject windowJsonObject = windowJsonArray.getJSONObject(where);
+                JSONArray centralJsonArray = windowJsonObject.getJSONArray("centralCommit");
+                List<String> centralCmts = centralJsonArray.toJavaList(String.class);
+                centralCommit.put(where, centralCmts);
+
+                JSONArray relativeJsonArray = windowJsonObject.getJSONArray("relativeCommits");
+                List<String> relativeCmts = relativeJsonArray.toJavaList(String.class);
+                relativeCommits.addAll(relativeCmts);
             }
             splicedGraph.setUpdate(updateMap);
+            splicedGraph.setCentralCommits(centralCommit);
+            splicedGraph.setRelativeCommits(relativeCommits);
         }
     }
 }

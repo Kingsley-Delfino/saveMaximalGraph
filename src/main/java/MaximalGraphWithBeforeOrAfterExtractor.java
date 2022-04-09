@@ -1,24 +1,36 @@
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
 import java.io.*;
 import java.util.*;
 
 public class MaximalGraphWithBeforeOrAfterExtractor {
 
-    private static final String G_SPAN_PATH = "D:\\workspace\\project\\code-change-analysis\\dataset\\commons-io6";
+    private static final String G_SPAN_PATH = "D:\\workspace\\project\\code-change-analysis\\dataset\\commons-io1000";
 
-    // 需要分析的文件名称，14为窗口长
-    private static final String FILE_NAME = "/commons-io1200_file_central_7";
+    // 需要分析的文件名称，7为窗口长
+    private static final String FILE_NAME = "/commons-io1000_file_k3_7";
 
-    // gSpan的结果导出文件名称，7为support
-    private static final String G_SPAN_ORIGINAL_GRAPH_NAME = FILE_NAME + "_0319";
+    //support
+    private static final String SUPPORT = "_2";
 
-    // gSpan的结果导出文件名称，7为support
-    private static final String G_SPAN_RESULT_NAME = FILE_NAME + "_5_0319";
+    //日期
+    private static final String DATE = "_0409";
+
+    // gSpan的结果导出文件名称
+    private static final String G_SPAN_RESULT_NAME = FILE_NAME + SUPPORT + DATE;
+
+    // 原始图及对应的json文件名，二者一致
+    private static final String G_SPAN_ORIGINAL_GRAPH_NAME = FILE_NAME + DATE;
 
     // 本程序输出结果文件名称
     private static final String MAXIMAL_RESULT_NAME = G_SPAN_RESULT_NAME + "(Maximal_Graph)";
 
     // txt文件后缀名
     private static final String TXT_SUFFIX = ".txt";
+
+    // json文件后缀名
+    private static final String JSON_SUFFIX = ".json";
 
     public static void main(String[] args) {
         // 从文件中读取所有的图
@@ -33,8 +45,11 @@ public class MaximalGraphWithBeforeOrAfterExtractor {
         // 读取原始图
         List<Graph> originalGraphList = readGraphWithNodeAttribute(G_SPAN_PATH + G_SPAN_ORIGINAL_GRAPH_NAME + TXT_SUFFIX);
 
+        //读取对应的json文件
+        JSONObject jsonObject = GraphUtils.readJson(G_SPAN_PATH + G_SPAN_ORIGINAL_GRAPH_NAME + JSON_SUFFIX);
+
         //更新图的节点的前后变更信息
-        updateGraphNodeAttribute(graphSet, originalGraphList);
+        updateGraphNodeAttribute(graphSet, originalGraphList, jsonObject);
 
         // 导出图
         exportWithNodeAttribute(graphSet, G_SPAN_PATH + MAXIMAL_RESULT_NAME + TXT_SUFFIX);
@@ -208,6 +223,7 @@ public class MaximalGraphWithBeforeOrAfterExtractor {
                     System.out.print(where[i]);
                 }
                 System.out.println("]");
+
                 Map<Integer, List<Integer>> update = graph.getUpdate();
                 if (!update.isEmpty()) {
                     System.out.println("Update: [");
@@ -225,6 +241,41 @@ public class MaximalGraphWithBeforeOrAfterExtractor {
                     }
                     System.out.println("]");
                 }
+
+                Map<Integer, List<String>> centralCommits = graph.getCentralCommits();
+                if (centralCommits != null && !centralCommits.isEmpty()) {
+                    System.out.println("centralCommit: [");
+                    for (Map.Entry<Integer, List<String>> entry : centralCommits.entrySet()) {
+                        System.out.print(entry.getKey());
+                        System.out.print(": [");
+                        List<String> commitList = entry.getValue();
+                        int size = commitList.size();
+                        for (int i = 0; i < size; i ++) {
+                            System.out.print(commitList.get(i));
+                            if (i < size - 1){
+                                System.out.println(", ");
+                            }
+                        }
+                        System.out.println("]");
+                    }
+                    System.out.println("]");
+                }
+
+                Set<String> relativeCommits = graph.getRelativeCommits();
+                if (relativeCommits != null && !relativeCommits.isEmpty()) {
+                    System.out.println("relativeCommits: [");
+                    int size = relativeCommits.size();
+                    int i = 0;
+                    for (String commit : relativeCommits) {
+                        System.out.print(commit);
+                        if (i < size - 1){
+                            System.out.println(", ");
+                        }
+                        i++;
+                    }
+                    System.out.println("]");
+                }
+
                 System.out.println();
                 System.out.println("-----------------");
                 System.out.println();
@@ -235,10 +286,14 @@ public class MaximalGraphWithBeforeOrAfterExtractor {
         }
     }
 
-    public static void updateGraphNodeAttribute(Set<Graph> graphSet, List<Graph> originalGraphList){
+    public static void updateGraphNodeAttribute(Set<Graph> graphSet, List<Graph> originalGraphList, JSONObject jsonObject){
+        // 读取json的内容，存入Map中
+        JSONArray windowJsonArray = jsonObject.getJSONArray("windows");
         for (Graph graph : graphSet) {
             int[] allWhere = graph.getWhere();
             Map<Integer, List<Integer>> nodePositions = new HashMap<>();
+            Map<Integer, List<String>> centralCommit = new TreeMap<>();
+            Set<String> relativeCommits = new LinkedHashSet<>();
             Set<Integer> nodes = graph.getNodes();
             for (int where : allWhere){
                 Graph originalGraph = originalGraphList.get(where);
@@ -248,8 +303,19 @@ public class MaximalGraphWithBeforeOrAfterExtractor {
                     positions.addAll(nodeBeforeOrAfter.get(node));
                     nodePositions.put(node, positions);
                 });
+
+                JSONObject windowJsonObject = windowJsonArray.getJSONObject(where);
+                JSONArray centralJsonArray = windowJsonObject.getJSONArray("centralCommit");
+                List<String> centralCmts = centralJsonArray.toJavaList(String.class);
+                centralCommit.put(where, centralCmts);
+
+                JSONArray relativeJsonArray = windowJsonObject.getJSONArray("relativeCommits");
+                List<String> relativeCmts = relativeJsonArray.toJavaList(String.class);
+                relativeCommits.addAll(relativeCmts);
             }
             graph.setNodeBeforeOrAfter(nodePositions);
+            graph.setCentralCommits(centralCommit);
+            graph.setRelativeCommits(relativeCommits);
         }
     }
 }

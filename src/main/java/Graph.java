@@ -12,6 +12,10 @@ public class Graph {
 
     private Map<Integer, List<Integer>> update;
 
+    private Map<Integer, List<String>> centralCommits;
+
+    private Set<String> relativeCommits;
+
     private final int support;
 
     private int diameter;
@@ -80,5 +84,21 @@ public class Graph {
 
     public Map<Integer, List<Integer>> getNodeBeforeOrAfter() {
         return nodeBeforeOrAfter;
+    }
+
+    public void setCentralCommits(Map<Integer, List<String>> centralCommits) {
+        this.centralCommits = new TreeMap<>(centralCommits);
+    }
+
+    public Map<Integer, List<String>> getCentralCommits() {
+        return centralCommits;
+    }
+
+    public void setRelativeCommits(Set<String> relativeCommits) {
+        this.relativeCommits = new LinkedHashSet<>(relativeCommits);
+    }
+
+    public Set<String> getRelativeCommits() {
+        return relativeCommits;
     }
 }

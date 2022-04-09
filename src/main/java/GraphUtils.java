@@ -253,7 +253,7 @@ public class GraphUtils {
                 }
                 System.out.println("]");
                 Map<Integer, List<Integer>> update = graph.getUpdate();
-                if (!update.isEmpty()) {
+                if (update != null && !update.isEmpty()) {
                     System.out.println("Update: [");
                     for (Map.Entry<Integer, List<Integer>> entry : update.entrySet()) {
                         System.out.print(entry.getKey());
@@ -269,6 +269,41 @@ public class GraphUtils {
                     }
                     System.out.println("]");
                 }
+
+                Map<Integer, List<String>> centralCommits = graph.getCentralCommits();
+                if (centralCommits != null && !centralCommits.isEmpty()) {
+                    System.out.println("centralCommit: [");
+                    for (Map.Entry<Integer, List<String>> entry : centralCommits.entrySet()) {
+                        System.out.print(entry.getKey());
+                        System.out.print(": [");
+                        List<String> commitList = entry.getValue();
+                        int size = commitList.size();
+                        for (int i = 0; i < size; i ++) {
+                            System.out.print(commitList.get(i));
+                            if (i < size - 1){
+                                System.out.println(", ");
+                            }
+                        }
+                        System.out.println("]");
+                    }
+                    System.out.println("]");
+                }
+
+                Set<String> relativeCommits = graph.getRelativeCommits();
+                if (relativeCommits != null && !relativeCommits.isEmpty()) {
+                    System.out.println("relativeCommits: [");
+                    int size = relativeCommits.size();
+                    int i = 0;
+                    for (String commit : relativeCommits) {
+                        System.out.print(commit);
+                        if (i < size - 1){
+                            System.out.println(", ");
+                        }
+                        i++;
+                    }
+                    System.out.println("]");
+                }
+
                 System.out.println();
                 System.out.println("-----------------");
                 System.out.println();
