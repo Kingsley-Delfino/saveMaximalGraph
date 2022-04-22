@@ -293,7 +293,7 @@ public class MaximalGraphWithBeforeOrAfterExtractor {
             int[] allWhere = graph.getWhere();
             Map<Integer, List<Integer>> nodePositions = new HashMap<>();
             Map<Integer, List<String>> centralCommit = new TreeMap<>();
-            Set<String> relativeCommits = new LinkedHashSet<>();
+            Set<String> relativeCommits = new TreeSet<>();
             Set<Integer> nodes = graph.getNodes();
             for (int where : allWhere){
                 Graph originalGraph = originalGraphList.get(where);

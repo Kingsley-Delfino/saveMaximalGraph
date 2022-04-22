@@ -271,7 +271,7 @@ public class AtomicGraphSplicer {
         for (Graph splicedGraph : splicedGraphSet) {
             Map<Integer, List<Integer>> updateMap = new TreeMap<>();
             Map<Integer, List<String>> centralCommit = new TreeMap<>();
-            Set<String> relativeCommits = new LinkedHashSet<>();
+            Set<String> relativeCommits = new TreeSet<>();
 
             int[] whereArray = splicedGraph.getWhere();
             Set<Integer> nodeSet = splicedGraph.getNodes();

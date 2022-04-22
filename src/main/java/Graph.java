@@ -95,7 +95,7 @@ public class Graph {
     }
 
     public void setRelativeCommits(Set<String> relativeCommits) {
-        this.relativeCommits = new LinkedHashSet<>(relativeCommits);
+        this.relativeCommits = new TreeSet<>(relativeCommits);
     }
 
     public Set<String> getRelativeCommits() {
