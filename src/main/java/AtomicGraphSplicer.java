@@ -23,7 +23,7 @@ public class AtomicGraphSplicer {
     private static final String MAXIMAL_RESULT_NAME = G_SPAN_RESULT_NAME + "(Maximal_Graph)";
 
     // 本程序输出结果文件名称
-    private static final String SPLICED_RESULT_NAME = G_SPAN_RESULT_NAME + "(Spliced_Link3)";
+    private static final String SPLICED_RESULT_NAME = G_SPAN_RESULT_NAME + "(Spliced_Link)";
 
     // txt文件后缀名
     private static final String TXT_SUFFIX = ".txt";
