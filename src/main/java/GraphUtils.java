@@ -39,7 +39,7 @@ public class GraphUtils {
                 InputStreamReader read = new InputStreamReader(new FileInputStream(file), encoding);
                 BufferedReader bufferedReader = new BufferedReader(read);
                 String lineTxt;
-                int index = -1;
+                int index = -2;
                 Set<Integer> nodes = new HashSet<>();
                 Set<Set<Integer>> edges = new HashSet<>();
                 Map<Integer, Integer> nodeReplace = new HashMap<>();
@@ -50,7 +50,7 @@ public class GraphUtils {
                     String[] array = lineTxt.split(" ");
                     switch (array[0]) {
                         case "t":
-                            if (index >= 0) {
+                            if (index != -2) {
                                 graphSet.add(new Graph(index, nodes, edges, where, null, support));
                             }
                             index = Integer.parseInt(array[2]);
