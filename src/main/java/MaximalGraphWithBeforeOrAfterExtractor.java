@@ -6,16 +6,19 @@ import java.util.*;
 
 public class MaximalGraphWithBeforeOrAfterExtractor {
 
-    private static final String G_SPAN_PATH = "D:\\workspace\\project\\code-change-analysis\\dataset\\commons-io1000";
+    private static final String G_SPAN_PATH = "D:\\workspace\\project\\code-change-analysis\\dataset\\tomcat5";
+
+    // Map所在的路径
+    private static final String ID_TO_INDEX_MAP_NAME = "/tomcat1000_file(Map)_0402.txt";
 
     // 需要分析的文件名称，7为窗口长
-    private static final String FILE_NAME = "/commons-io1000_file_k3_7";
+    private static final String FILE_NAME = "/tomcat_file_m15_k2_tw4";
 
     //support
-    private static final String SUPPORT = "_2";
+    private static final String SUPPORT = "_3";
 
     //日期
-    private static final String DATE = "_0409";
+    private static final String DATE = "_0511";
 
     // gSpan的结果导出文件名称
     private static final String G_SPAN_RESULT_NAME = FILE_NAME + SUPPORT + DATE;
@@ -48,8 +51,10 @@ public class MaximalGraphWithBeforeOrAfterExtractor {
         //读取对应的json文件
         JSONObject jsonObject = GraphUtils.readJson(G_SPAN_PATH + G_SPAN_ORIGINAL_GRAPH_NAME + JSON_SUFFIX);
 
+        Map<String, Map<Integer, String>> indexToPathMap = GraphUtils.getIndexToPathMap(G_SPAN_PATH + ID_TO_INDEX_MAP_NAME);
+
         //更新图的节点的前后变更信息
-        updateGraphNodeAttribute(graphSet, originalGraphList, jsonObject);
+        updateGraphNodeAttribute(graphSet, originalGraphList, jsonObject, indexToPathMap);
 
         // 导出图
         exportWithNodeAttribute(graphSet, G_SPAN_PATH + MAXIMAL_RESULT_NAME + TXT_SUFFIX);
@@ -192,6 +197,7 @@ public class MaximalGraphWithBeforeOrAfterExtractor {
                 System.out.println("t # " + graph.getIndex());
                 Map<Integer, Integer> nodeReplace = new HashMap<>();
                 Map<Integer, List<Integer>> nodeBeforeOrAfter = graph.getNodeBeforeOrAfter();
+                Map<Integer, String> indexToPath = graph.getIndexToPath();
                 int index = 0;
                 for (Integer node : graph.getNodes()) {
                     System.out.print("v " + index + " " + node); // 输出文件名
@@ -202,8 +208,7 @@ public class MaximalGraphWithBeforeOrAfterExtractor {
                         }
                         System.out.print(nodeBeforeOrAfter.get(node).get(i));
                     }
-                    System.out.println("]");
-
+                    System.out.println("] " + indexToPath.get(node));
                     nodeReplace.put(node, index);
                     index ++;
                 }
@@ -286,13 +291,15 @@ public class MaximalGraphWithBeforeOrAfterExtractor {
         }
     }
 
-    public static void updateGraphNodeAttribute(Set<Graph> graphSet, List<Graph> originalGraphList, JSONObject jsonObject){
+    public static void updateGraphNodeAttribute(Set<Graph> graphSet, List<Graph> originalGraphList,
+                                                JSONObject jsonObject, Map<String, Map<Integer, String>> indexToPathMap){
         // 读取json的内容，存入Map中
         JSONArray windowJsonArray = jsonObject.getJSONArray("windows");
         for (Graph graph : graphSet) {
             int[] allWhere = graph.getWhere();
             Map<Integer, List<Integer>> nodePositions = new HashMap<>();
             Map<Integer, List<String>> centralCommit = new TreeMap<>();
+            Map<Integer, String> indexToPath = new HashMap<>();
             Set<String> relativeCommits = new TreeSet<>();
             Set<Integer> nodes = graph.getNodes();
             for (int where : allWhere){
@@ -313,9 +320,27 @@ public class MaximalGraphWithBeforeOrAfterExtractor {
                 List<String> relativeCmts = relativeJsonArray.toJavaList(String.class);
                 relativeCommits.addAll(relativeCmts);
             }
+
+            int where_size = allWhere.length;
+            JSONObject windowJsonObject = windowJsonArray.getJSONObject(allWhere[where_size -1]);
+            JSONArray centralJsonArray = windowJsonObject.getJSONArray("centralCommit");
+            List<String> centralCmts = centralJsonArray.toJavaList(String.class);
+            int centralCmtsSize = centralCmts.size();
+            String latestCommit = centralCmts.get(centralCmtsSize - 1);
+            String commit =  latestCommit.split("_")[1];
+            Map<Integer, String> allIndexToPath = indexToPathMap.get(commit);
+            for (Integer index : nodes){
+                String path = allIndexToPath.get(index);
+                if (path == null){
+                    path = "";
+                }
+                indexToPath.put(index, path);
+            }
+
             graph.setNodeBeforeOrAfter(nodePositions);
             graph.setCentralCommits(centralCommit);
             graph.setRelativeCommits(relativeCommits);
+            graph.setIndexToPath(indexToPath);
         }
     }
 }

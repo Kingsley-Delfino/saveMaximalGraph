@@ -230,9 +230,10 @@ public class GraphUtils {
                 System.out.println();
                 System.out.println("t # " + graph.getIndex());
                 Map<Integer, Integer> nodeReplace = new HashMap<>();
+                Map<Integer, String> indexToPath = graph.getIndexToPath();
                 int index = 0;
                 for (Integer node : graph.getNodes()) {
-                    System.out.println("v " + index + " " + node); // 输出文件名
+                    System.out.println("v " + index + " " + node + " " + indexToPath.get(node)); // 输出文件名
                     nodeReplace.put(node, index);
                     index ++;
                 }
@@ -397,4 +398,36 @@ public class GraphUtils {
         }
         return jsonObject;
     }
+
+    /**
+     * 从指定的Map文件中读取数据，生成数据库中文件/方法id-index的对应关系，并存入Map中
+     *
+     * @param mapFilePath Map文件的绝对路径
+     * @return 生成的文件/方法id-index的Map
+     */
+    public static Map<String, Map<Integer, String>> getIndexToPathMap(String mapFilePath) {
+        Map<String, Map<Integer, String>> indexToPathMap = new HashMap<>();
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(mapFilePath));
+            String entry;
+            while ((entry = reader.readLine()) != null) {
+                String[] entryArray = entry.split("___");
+//                Long id = Long.parseLong(entryArray[0]);
+                entryArray = entryArray[1].split(": /");
+                Integer index = Integer.parseInt(entryArray[0]);
+                entryArray = entryArray[1].split("\\)/");
+                String commit = entryArray[0] + ")";
+                String path = entryArray[1];
+
+                Map<Integer, String> indexToPath = indexToPathMap.getOrDefault(commit, new HashMap<>());
+                indexToPath.put(index, path);
+                indexToPathMap.put(commit, indexToPath);
+            }
+            reader.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return indexToPathMap;
+    }
+
 }

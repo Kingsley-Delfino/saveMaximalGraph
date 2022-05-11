@@ -22,6 +22,8 @@ public class Graph {
 
     private Map<Integer, List<Integer>> nodeBeforeOrAfter;
 
+    private Map<Integer, String> indexToPath;
+
     public Graph(int index, Set<Integer> nodes, Set<Set<Integer>> edges, int[] where, Map<Integer, List<Integer>> update, int support) {
         this.index = index;
         this.nodes = new HashSet<>(nodes);
@@ -29,6 +31,7 @@ public class Graph {
         this.where = where == null ? new int[0] : where;
         this.update = update == null ? new HashMap<>() : new HashMap<>(update);
         this.nodeBeforeOrAfter = new HashMap<>();
+        this.indexToPath = new HashMap<>();
         this.support = support;
         this.diameter = 0;
     }
@@ -100,5 +103,13 @@ public class Graph {
 
     public Set<String> getRelativeCommits() {
         return relativeCommits;
+    }
+
+    public void setIndexToPath(Map<Integer, String> indexToPath) {
+        this.indexToPath = new HashMap<>(indexToPath);
+    }
+
+    public Map<Integer, String> getIndexToPath() {
+        return indexToPath;
     }
 }

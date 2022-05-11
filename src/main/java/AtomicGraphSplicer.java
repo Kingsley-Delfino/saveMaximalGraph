@@ -5,16 +5,19 @@ import java.util.*;
 
 public class AtomicGraphSplicer {
 
-    private static final String G_SPAN_PATH = "D:\\workspace\\project\\code-change-analysis\\dataset\\commons-io1000";
+    private static final String G_SPAN_PATH = "D:\\workspace\\project\\code-change-analysis\\dataset\\tomcat5";
+
+    // Map所在的路径
+    private static final String ID_TO_INDEX_MAP_NAME = "/tomcat1000_file(Map)_0402.txt";
 
     // 需要分析的文件名称，7为窗口长
-    private static final String FILE_NAME = "/commons-io1000_file_k3_7";
+    private static final String FILE_NAME = "/tomcat_file_m15_k2_tw4";
 
     //support
-    private static final String SUPPORT = "_2";
+    private static final String SUPPORT = "_3";
 
     //日期
-    private static final String DATE = "_0409";
+    private static final String DATE = "_0511";
 
     // gSpan的结果导出文件名称
     private static final String G_SPAN_RESULT_NAME = FILE_NAME + SUPPORT + DATE;
@@ -46,8 +49,10 @@ public class AtomicGraphSplicer {
         findWhereList(allSplicedGraph, graphSet);
         // 读取json文件
         JSONObject jsonObject = GraphUtils.readJson(G_SPAN_PATH + FILE_NAME + DATE + JSON_SUFFIX);
+
+        Map<String, Map<Integer, String>> indexToPathMap = GraphUtils.getIndexToPathMap(G_SPAN_PATH + ID_TO_INDEX_MAP_NAME);
         // 寻找拼接图所涉及到的每个commit修改的文件
-        findUpdate(allSplicedGraph, jsonObject);
+        findUpdate(allSplicedGraph, jsonObject, indexToPathMap);
         // 导出图
         GraphUtils.export(allSplicedGraph, G_SPAN_PATH + SPLICED_RESULT_NAME + TXT_SUFFIX);
     }
@@ -251,7 +256,8 @@ public class AtomicGraphSplicer {
      * @param jsonObject 存有所有窗口中心commit修改的全部文件下标的json
      *
      */
-    private static void findUpdate(Set<Graph> splicedGraphSet, JSONObject jsonObject) {
+    private static void findUpdate(Set<Graph> splicedGraphSet, JSONObject jsonObject,
+                                   Map<String, Map<Integer, String>> indexToPathMap) {
         Map<Integer, List<Integer>> allUpdateMap = new HashMap<>();
         // 读取json的内容，存入Map中
         JSONArray windowJsonArray = jsonObject.getJSONArray("windows");
@@ -272,6 +278,7 @@ public class AtomicGraphSplicer {
             Map<Integer, List<Integer>> updateMap = new TreeMap<>();
             Map<Integer, List<String>> centralCommit = new TreeMap<>();
             Set<String> relativeCommits = new TreeSet<>();
+            Map<Integer, String> indexToPath = new HashMap<>();
 
             int[] whereArray = splicedGraph.getWhere();
             Set<Integer> nodeSet = splicedGraph.getNodes();
@@ -290,9 +297,27 @@ public class AtomicGraphSplicer {
                 List<String> relativeCmts = relativeJsonArray.toJavaList(String.class);
                 relativeCommits.addAll(relativeCmts);
             }
+
+            int where_size = whereArray.length;
+            JSONObject windowJsonObject = windowJsonArray.getJSONObject(whereArray[where_size -1]);
+            JSONArray centralJsonArray = windowJsonObject.getJSONArray("centralCommit");
+            List<String> centralCmts = centralJsonArray.toJavaList(String.class);
+            int centralCmtsSize = centralCmts.size();
+            String latestCommit = centralCmts.get(centralCmtsSize - 1);
+            String commit =  latestCommit.split("_")[1];
+            Map<Integer, String> allIndexToPath = indexToPathMap.get(commit);
+            for (Integer index : nodeSet){
+                String path = allIndexToPath.get(index);
+                if (path == null){
+                    path = "";
+                }
+                indexToPath.put(index, path);
+            }
+
             splicedGraph.setUpdate(updateMap);
             splicedGraph.setCentralCommits(centralCommit);
             splicedGraph.setRelativeCommits(relativeCommits);
+            splicedGraph.setIndexToPath(indexToPath);
         }
     }
 }
