@@ -24,6 +24,8 @@ public class Graph {
 
     private Map<Integer, String> indexToPath;
 
+    private Map<Integer, String> nodeLabel;
+
     public Graph(int index, Set<Integer> nodes, Set<Set<Integer>> edges, int[] where, Map<Integer, List<Integer>> update, int support) {
         this.index = index;
         this.nodes = new HashSet<>(nodes);
@@ -34,6 +36,12 @@ public class Graph {
         this.indexToPath = new HashMap<>();
         this.support = support;
         this.diameter = 0;
+    }
+
+    public Graph(int index, Set<Integer> nodes, Set<Set<Integer>> edges, int[] where, Map<Integer, List<Integer>> update,
+                 int support, Map<Integer, String> nodeLabel){
+        this(index, nodes, edges, where, update, support);
+        this.nodeLabel = nodeLabel == null ? new HashMap<>() : new HashMap<>(nodeLabel);;
     }
 
     public int getIndex() {
@@ -111,5 +119,9 @@ public class Graph {
 
     public Map<Integer, String> getIndexToPath() {
         return indexToPath;
+    }
+
+    public Map<Integer, String> getNodeLabel() {
+        return nodeLabel;
     }
 }
